@@ -1,1 +1,0 @@
-youtube-dl --sub-lang $lang --write-auto-sub --skip-download $url
