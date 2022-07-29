@@ -12,7 +12,7 @@ class Regexes:
     unRegex2 = r"\n"
     all = [timeRegex, titleRegex, twoLineRegex, unRegex1, unRegex2]
 
-def download_subs(url, parent_folder): #! deprecated
+def download_subs(url, parent_folder):
     youtube_dl_options = {
         'writesubtitles': True, 
         'writeautomaticsub': True, 
