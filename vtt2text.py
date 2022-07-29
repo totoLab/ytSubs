@@ -1,110 +1,55 @@
-"""
-Convert YouTube subtitles(vtt) to human readable text.
-
-Download only subtitles from YouTube with youtube-dl:
-youtube-dl  --skip-download --convert-subs vtt <video_url>
-
-Note that default subtitle format provided by YouTube is ass, which is hard
-to process with simple regex. Luckily youtube-dl can convert ass to vtt, which
-is easier to process.
-
-To conver all vtt files inside a directory:
-find . -name "*.vtt" -exec python vtt2text.py {} \;
-"""
-
-import sys
 import re
+import datetime
+import sys
+import youtube_dl
+import os
 
+class Regexes:
+    timeRegex = r"\d\d\:\d\d\:\d\d\.\d\d\d\s-->\s\d\d\:\d\d\:\d\d\.\d\d\d(.*)"
+    titleRegex = r"WEBVTT\nKind: captions\nLanguage:.*\n"
+    twoLineRegex = r"\n\n"
+    unRegex1 = r"(\s)+\n"
+    unRegex2 = r"\n"
+    all = [timeRegex, titleRegex, twoLineRegex, unRegex1, unRegex2]
 
-def remove_tags(text):
-    """
-    Remove vtt markup tags
-    """
-    tags = [
-        r'</c>',
-        r'<c(\.color\w+)?>',
-        r'<\d{2}:\d{2}:\d{2}\.\d{3}>',
+def download_subs(url, parent_folder): #! deprecated
+    youtube_dl_options = {
+        'writesubtitles': True, 
+        'writeautomaticsub': True, 
+        'youtube_include_dash_manifest': False,
+        'skip_download': True,
+        'outtmpl': f"{parent_folder}/%(title)s.%(ext)s"
+    }
 
-    ]
+    with youtube_dl.YoutubeDL(youtube_dl_options) as youtube_dl_client:
+        title = youtube_dl_client.extract_info(url)["title"]
+        youtube_dl_client.download([url])
 
-    for pat in tags:
-        text = re.sub(pat, '', text)
+    return title
 
-    # extract timestamp, only kep HH:MM
-    text = re.sub(
-        r'(\d{2}:\d{2}):\d{2}\.\d{3} --> .* align:start position:0%',
-        r'\g<1>',
-        text
-    )
+def substitute(path):
+    with open(path, "r") as f:
+        content = f.read()
 
-    text = re.sub(r'^\s+$', '', text, flags=re.MULTILINE)
-    return text
+    for regex in Regexes.all:
+        content = re.sub(regex, "", content)
 
-def remove_header(lines):
-    """
-    Remove vtt file header
-    """
-    pos = -1
-    for mark in ('##', 'Language: en',):
-        if mark in lines:
-            pos = lines.index(mark)
-    lines = lines[pos+1:]
-    return lines
+    return content.strip().split("\n")[0]
 
+def overwrite(content, path):
+    current_datetime = datetime.datetime.now().strftime("%d-%m-%Y")
 
-def merge_duplicates(lines):
-    """
-    Remove duplicated subtitles. Duplacates are always adjacent.
-    """
-    last_timestamp = ''
-    last_cap = ''
-    for line in lines:
-        if line == "":
-            continue
-        if re.match(r'^\d{2}:\d{2}$', line):
-            if line != last_timestamp:
-                yield line
-                last_timestamp = line
-        else:
-            if line != last_cap:
-                yield line
-                last_cap = line
-
-
-def merge_short_lines(lines):
-    buffer = ''
-    for line in lines:
-        if line == "" or re.match(r'^\d{2}:\d{2}$', line):
-            yield '\n' + line
-            continue
-
-        if len(line+buffer) < 80:
-            buffer += ' ' + line
-        else:
-            yield buffer.strip()
-            buffer = line
-    yield buffer
-
+    new_filename = f"{path[:len(path) - 7]}-{current_datetime}.txt"
+    with open(new_filename, "x") as f:
+        f.write(content)
 
 def main():
-    vtt_file_name = sys.argv[1]
-    txt_name =  re.sub(r'.vtt$', '.txt', vtt_file_name)
-    with open(vtt_file_name) as f:
-        text = f.read()
-    text = remove_tags(text)
-    lines = text.splitlines()
-    lines = remove_header(lines)
-    lines = merge_duplicates(lines)
-    lines = list(lines)
-    lines = merge_short_lines(lines)
-    lines = list(lines)
+    url = "https://youtu.be/GBvlMvivCnI"
+    lang = "en"
+    parent_folder = os.getcwd()
+    title = download_subs(url, parent_folder)
+    path = f"{parent_folder}/{title}.{lang}.vtt"
+    content = substitute(path)
+    overwrite(content, path)
 
-    with open(txt_name, 'w') as f:
-        for line in lines:
-            f.write(line)
-            f.write("\n")
-
-
-
-if __name__ == "__main__":
-    main()
+main()
