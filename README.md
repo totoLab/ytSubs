@@ -1,4 +1,8 @@
 # ytSubs
+Download youtube subtitles passing an url, receive a document with ONLY the subtitles and nothing else.
+
+## Requirements
+`pip install youtube_dl`
 
 ## Usage
 `$ python vtt2text.py $url`
