@@ -1,12 +1,13 @@
-### Automatable:
-- ##### Regex
-  - Download subs with youtube-dl
-  - Remove tags <> for timestamps
-  - Remove empty lines
-  - Now lines are repeated tree times, delete each row two twice
-  - Delete all \n
-- #### Word Processor
-  - Pass the one line result to a word processor
+# ytSubs
 
-### Not really automatable: 
-- Edit from there
+## Usage
+`$ python vtt2text.py $url`
+
+## TODO:
+- ### Python
+  - [x] Download subs with youtube-dl
+  - [x] Remove tags <> for timestamps, empty lines, repetead lines
+  - [] Automate choice between classic and auto-generated subtitles 
+- ### Shell
+  - [] Pass the result to a word processor:
+  `pandoc -o output.docx input.txt`
